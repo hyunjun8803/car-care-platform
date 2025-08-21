@@ -1,0 +1,14 @@
+{
+  "crons": [
+    {
+      "path": "/api/notifications/reminder",
+      "schedule": "0 9 * * *"
+    }
+  ],
+  "functions": {
+    "src/app/api/**/*.ts": {
+      "maxDuration": 30
+    }
+  },
+  "regions": ["icn1"]
+}

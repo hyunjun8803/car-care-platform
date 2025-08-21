@@ -1,0 +1,281 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  phone         String?
+  address       String?   // 사용자 주소
+  emailVerified DateTime?
+  image         String?
+  password             String?
+  userType             UserType  @default(CUSTOMER)
+  isVerified           Boolean   @default(false)
+  notificationSettings String? // JSON string for notification preferences
+  preferences          String? // JSON string for user preferences (알림 설정 등)
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  accounts        Account[]
+  sessions        Session[]
+  cars            Car[]
+  maintenanceLogs MaintenanceLog[]
+  shops           Shop[]
+  bookings        Booking[]
+  reviews         Review[]
+  notifications   Notification[]
+  expenses        Expense[]
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Car {
+  id                String    @id @default(cuid())
+  userId            String
+  name              String    // 차량 이름 (예: "내 소나타")
+  brand             String    // 브랜드 (예: "현대")
+  model             String    // 모델명 (예: "소나타 DN8")
+  year              Int
+  licensePlate      String    @unique
+  mileage           Int       @default(0)
+  fuelType          String    // 연료 타입 (가솔린/디젤)
+  engineSize        String?   // 엔진 사양 (예: "2.0L")
+  color             String?   // 차량 색상
+  lastMaintenance   String?   // 마지막 정비일 (YYYY-MM-DD)
+  nextMaintenance   String?   // 다음 정비 예정일
+  totalCost         Float     @default(0) // 총 정비 비용
+  maintenanceCount  Int       @default(0) // 정비 횟수
+  isActive          Boolean   @default(true)
+  createdAt         DateTime  @default(now())
+
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  maintenanceLogs MaintenanceLog[]
+  bookings        Booking[]
+  expenses        Expense[]
+}
+
+model Shop {
+  id              String   @id @default(cuid())
+  ownerId         String
+  businessName    String
+  businessNumber  String   @unique
+  address         String
+  latitude        Float?
+  longitude       Float?
+  phone           String
+  email           String
+  operatingHours  String?
+  rating          Float    @default(0)
+  totalReviews    Int      @default(0)
+  isVerified      Boolean  @default(false)
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+
+  owner    User      @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  services Service[]
+  bookings Booking[]
+  reviews  Review[]
+}
+
+model ServiceCategory {
+  id          String    @id @default(cuid())
+  name        String    @unique
+  description String?
+  icon        String?
+  
+  services Service[]
+}
+
+model Service {
+  id                String   @id @default(cuid())
+  shopId            String
+  categoryId        String
+  name              String
+  description       String?
+  basePrice         Float
+  estimatedDuration Int
+  isAvailable       Boolean  @default(true)
+  createdAt         DateTime @default(now())
+
+  shop     Shop            @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  category ServiceCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  bookings Booking[]
+}
+
+model Booking {
+  id            String        @id @default(cuid())
+  userId        String
+  carId         String
+  shopId        String
+  serviceId     String
+  bookingDate   DateTime
+  bookingTime   String
+  status        BookingStatus @default(PENDING)
+  notes         String?
+  estimatedCost Float?
+  finalCost     Float?
+  paymentStatus PaymentStatus @default(UNPAID)
+  createdAt     DateTime      @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  car     Car     @relation(fields: [carId], references: [id], onDelete: Cascade)
+  shop    Shop    @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  service Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  review  Review?
+}
+
+model MaintenanceLog {
+  id           String    @id @default(cuid())
+  carId        String
+  userId       String    // 사용자 ID 추가
+  date         String    // 정비일 (YYYY-MM-DD 형식)
+  type         String    // 정비 타입 (예: "정기점검", "수리")
+  description  String    // 정비 내용
+  cost         Float     // 정비 비용
+  mileage      Int       // 정비 당시 주행거리
+  shopName     String    // 정비소 이름
+  shopAddress  String?   // 정비소 주소
+  parts        String?   // 교체 부품
+  notes        String?   // 추가 메모
+  createdAt    DateTime  @default(now())
+
+  car  Car  @relation(fields: [carId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  bookingId String   @unique
+  userId    String
+  shopId    String
+  rating    Int
+  comment   String?
+  createdAt DateTime @default(now())
+
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  shop    Shop    @relation(fields: [shopId], references: [id], onDelete: Cascade)
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String
+  title     String
+  message   String?
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Expense {
+  id              String        @id @default(cuid())
+  userId          String
+  carId           String
+  category        ExpenseCategory
+  subcategory     String?       // 세부 카테고리 (예: "하이오일", "전륜 타이어" 등)
+  amount          Float         // 지출 금액
+  description     String        // 지출 내용 설명
+  date            DateTime      // 지출 날짜
+  location        String?       // 지출 장소 (주유소, 정비소 등)
+  mileage         Int?          // 지출 당시 주행거리
+  paymentMethod   PaymentMethod @default(CASH)
+  receiptImageUrl String?       // 영수증 이미지 URL
+  ocrData         String?       // OCR 추출 데이터 (JSON)
+  tags            String?       // 태그 (JSON 배열)
+  notes           String?       // 추가 메모
+  isRecurring     Boolean       @default(false) // 정기 지출 여부
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  car  Car  @relation(fields: [carId], references: [id], onDelete: Cascade)
+}
+
+enum UserType {
+  CUSTOMER
+  SHOP_OWNER
+  ADMIN
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  UNPAID
+  PAID
+  REFUNDED
+}
+
+enum ExpenseCategory {
+  FUEL          // 연료
+  MAINTENANCE   // 정비/수리
+  INSURANCE     // 보험
+  TAX           // 세금/등록비
+  PARKING       // 주차비
+  TOLL          // 통행료
+  CARWASH       // 세차
+  ACCESSORIES   // 용품/액세서리
+  RENTAL        // 렌트/리스
+  OTHER         // 기타
+}
+
+enum PaymentMethod {
+  CASH          // 현금
+  CARD          // 카드
+  BANK_TRANSFER // 계좌이체
+  MOBILE_PAY    // 모바일페이
+  OTHER         // 기타
+}

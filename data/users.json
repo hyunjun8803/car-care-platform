@@ -1,0 +1,29 @@
+[
+  {
+    "id": "super_admin_001",
+    "name": "최고관리자",
+    "email": "hyunjun2@naver.com",
+    "password": "",
+    "userType": "ADMIN",
+    "role": "SUPER_ADMIN",
+    "createdAt": "2025-08-20T08:57:00.842Z"
+  },
+  {
+    "name": "김정비",
+    "email": "test@theshift.co.kr",
+    "password": "$2b$12$k4OWFsC0cWpIrmZgnvwFkepaJTqUFKxmwbxwMXkwT4hQnwwxeDIdS",
+    "phone": "01011112222",
+    "userType": "SHOP_OWNER",
+    "shopInfo": {
+      "shopName": "더시프트",
+      "businessNumber": "3030011452",
+      "address": "충남 천안시 동남구 다가말4길 18 (다가동, 카맨샵) 1층",
+      "description": "한타",
+      "businessLicenseUrl": "business_license_1755680220351_떠나요icon.png",
+      "status": "APPROVED",
+      "createdAt": "2025-08-20T08:57:00.588Z"
+    },
+    "id": "user_1755680220844_2nio489lhuy",
+    "createdAt": "2025-08-20T08:57:00.844Z"
+  }
+]
