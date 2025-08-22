@@ -7,6 +7,7 @@ type UserType = 'CUSTOMER' | 'SHOP_OWNER' | 'ADMIN';
 const pagePermissions: Record<string, UserType[]> = {
   '/dashboard': ['CUSTOMER', 'SHOP_OWNER', 'ADMIN'],
   '/cars': ['CUSTOMER', 'ADMIN'],
+  '/booking': ['CUSTOMER', 'ADMIN'],
   '/bookings': ['CUSTOMER', 'ADMIN'],
   '/expenses': ['CUSTOMER', 'ADMIN'],
   '/maintenance': ['CUSTOMER', 'ADMIN'],
@@ -64,7 +65,7 @@ export default withAuth(
         const pathname = req.nextUrl.pathname
         
         // 공개 경로들
-        const publicPaths = ['/', '/auth', '/shops', '/api/auth']
+        const publicPaths = ['/', '/auth', '/shops', '/api/auth', '/api/shops']
         if (publicPaths.some(path => pathname.startsWith(path))) {
           return true
         }
