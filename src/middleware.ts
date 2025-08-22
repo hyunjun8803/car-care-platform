@@ -1,5 +1,5 @@
-import { withAuth } from "next-auth/middleware"
-import { NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
+import { getToken } from "next-auth/jwt"
 
 type UserType = 'CUSTOMER' | 'SHOP_OWNER' | 'ADMIN';
 
@@ -29,75 +29,63 @@ function hasPermission(userType: UserType, requiredTypes: UserType[]): boolean {
   return requiredTypes.includes(userType);
 }
 
-export default withAuth(
-  function middleware(req) {
-    const token = req.nextauth.token
-    const pathname = req.nextUrl.pathname
+export default async function middleware(req: NextRequest) {
+  const pathname = req.nextUrl.pathname
 
-    // API routes (except /api/auth) should bypass all middleware logic
-    if (pathname.startsWith('/api/') && !pathname.startsWith('/api/auth')) {
-      return NextResponse.next()
-    }
-
-    // 인증된 사용자의 권한 기반 라우팅
-    if (token) {
-      const userType = token.userType as string
-
-      // 사용자 타입별 기본 대시보드로 리다이렉션
-      if (pathname === '/dashboard') {
-        if (userType === 'SHOP_OWNER') {
-          return NextResponse.redirect(new URL('/shop-owner/dashboard', req.url))
-        }
-      }
-
-      // 관리자 페이지 접근 제한
-      if (pathname.startsWith('/admin') && userType !== 'ADMIN') {
-        return NextResponse.redirect(new URL('/dashboard', req.url))
-      }
-
-      // 정비소 운영자 페이지 접근 제한  
-      if (pathname.startsWith('/shop-owner') && 
-          !hasPermission(userType as UserType, ['SHOP_OWNER', 'ADMIN'])) {
-        return NextResponse.redirect(new URL('/dashboard', req.url))
-      }
-    }
-
+  // API routes (except /api/auth) are always public
+  if (pathname.startsWith('/api/') && !pathname.startsWith('/api/auth')) {
     return NextResponse.next()
-  },
-  {
-    callbacks: {
-      authorized: ({ token, req }) => {
-        const pathname = req.nextUrl.pathname
-        
-        // All API routes except /api/auth are public
-        if (pathname.startsWith('/api/') && !pathname.startsWith('/api/auth')) {
-          return true
-        }
-        
-        // 공개 경로들 (인증 불필요)
-        const publicPaths = ['/', '/auth', '/shops', '/api/auth']
-        if (publicPaths.some(path => pathname.startsWith(path))) {
-          return true
-        }
-
-        // 인증이 필요한 경로
-        if (!token) {
-          return false
-        }
-
-        // 페이지별 권한 확인
-        const requiredTypes = pagePermissions[pathname]
-        if (requiredTypes) {
-          const userType = token.userType as UserType
-          return hasPermission(userType, requiredTypes)
-        }
-
-        // 기본적으로 인증된 사용자는 접근 허용
-        return true
-      },
-    },
   }
-)
+
+  // 공개 경로들 (인증 불필요)
+  const publicPaths = ['/', '/auth', '/shops']
+  if (publicPaths.some(path => pathname.startsWith(path))) {
+    return NextResponse.next()
+  }
+
+  // /api/auth routes are handled by NextAuth
+  if (pathname.startsWith('/api/auth')) {
+    return NextResponse.next()
+  }
+
+  // Get token for protected routes
+  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET })
+
+  // 인증이 필요한 경로
+  if (!token) {
+    return NextResponse.redirect(new URL('/auth/signin', req.url))
+  }
+
+  const userType = token.userType as string
+
+  // 사용자 타입별 기본 대시보드로 리다이렉션
+  if (pathname === '/dashboard') {
+    if (userType === 'SHOP_OWNER') {
+      return NextResponse.redirect(new URL('/shop-owner/dashboard', req.url))
+    }
+  }
+
+  // 관리자 페이지 접근 제한
+  if (pathname.startsWith('/admin') && userType !== 'ADMIN') {
+    return NextResponse.redirect(new URL('/dashboard', req.url))
+  }
+
+  // 정비소 운영자 페이지 접근 제한  
+  if (pathname.startsWith('/shop-owner') && 
+      !hasPermission(userType as UserType, ['SHOP_OWNER', 'ADMIN'])) {
+    return NextResponse.redirect(new URL('/dashboard', req.url))
+  }
+
+  // 페이지별 권한 확인
+  const requiredTypes = pagePermissions[pathname]
+  if (requiredTypes) {
+    if (!hasPermission(userType as UserType, requiredTypes)) {
+      return NextResponse.redirect(new URL('/dashboard', req.url))
+    }
+  }
+
+  return NextResponse.next()
+}
 
 export const config = {
   matcher: [
