@@ -34,6 +34,11 @@ export default withAuth(
     const token = req.nextauth.token
     const pathname = req.nextUrl.pathname
 
+    // API routes (except /api/auth) should bypass all middleware logic
+    if (pathname.startsWith('/api/') && !pathname.startsWith('/api/auth')) {
+      return NextResponse.next()
+    }
+
     // 인증된 사용자의 권한 기반 라우팅
     if (token) {
       const userType = token.userType as string
@@ -64,6 +69,11 @@ export default withAuth(
       authorized: ({ token, req }) => {
         const pathname = req.nextUrl.pathname
         
+        // All API routes except /api/auth are public
+        if (pathname.startsWith('/api/') && !pathname.startsWith('/api/auth')) {
+          return true
+        }
+        
         // 공개 경로들 (인증 불필요)
         const publicPaths = ['/', '/auth', '/shops', '/api/auth']
         if (publicPaths.some(path => pathname.startsWith(path))) {
@@ -92,12 +102,12 @@ export default withAuth(
 export const config = {
   matcher: [
     /*
-     * 미들웨어를 적용할 경로들:
-     * - /api/auth/* (인증 관련 API)  
-     * - 모든 페이지 경로 (단, 정적 파일 제외)
-     * - API routes는 /api/auth를 제외하고 모두 제외
+     * Match all request paths except for the ones starting with:
+     * - api (API routes)
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
      */
-    '/api/auth/:path*',
     '/((?!api|_next/static|_next/image|favicon.ico).*)',
   ],
 }
