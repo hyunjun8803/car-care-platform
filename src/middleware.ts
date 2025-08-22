@@ -93,9 +93,11 @@ export const config = {
   matcher: [
     /*
      * 미들웨어를 적용할 경로들:
-     * - 모든 페이지 경로 (단, API routes와 정적 파일 제외)
-     * - /api/auth/* (인증 관련 API만)
+     * - /api/auth/* (인증 관련 API)  
+     * - 모든 페이지 경로 (단, 정적 파일 제외)
+     * - API routes는 /api/auth를 제외하고 모두 제외
      */
-    '/((?!api(?!/auth)|_next/static|_next/image|favicon.ico).*)',
+    '/api/auth/:path*',
+    '/((?!api|_next/static|_next/image|favicon.ico).*)',
   ],
 }
