@@ -32,30 +32,47 @@ export async function GET() {
 
     const userId = session.user.id;
     
+    // 다중 저장소에서 차량 조회 (Supabase + 메모리)
+    let allCars: any[] = [];
+    let sources: string[] = [];
+    
+    // Supabase에서 차량 조회 시도
     try {
-      // Supabase 우선 시도
-      const userCars = await supabaseCarStorage.findByUserId(userId);
-      
-      return NextResponse.json({
-        success: true,
-        data: userCars,
-        count: userCars.length,
-        source: 'supabase'
-      });
+      const supabaseCars = await supabaseCarStorage.findByUserId(userId);
+      if (supabaseCars.length > 0) {
+        allCars.push(...supabaseCars);
+        sources.push('supabase');
+      }
     } catch (supabaseError) {
-      console.log('Supabase 차량 조회 실패, 메모리 저장소 사용:', supabaseError);
-      
-      // 메모리 저장소 폴백
-      const userCars = await carMemoryStorage.findByUserId(userId);
-      
-      return NextResponse.json({
-        success: true,
-        data: userCars,
-        count: userCars.length,
-        source: 'memory',
-        warning: 'Supabase 연결 실패로 임시 저장소 사용 중'
-      });
+      console.log('Supabase 차량 조회 실패:', supabaseError);
     }
+    
+    // 메모리 저장소에서 차량 조회
+    try {
+      const memoryCars = await carMemoryStorage.findByUserId(userId);
+      if (memoryCars.length > 0) {
+        allCars.push(...memoryCars);
+        sources.push('memory');
+      }
+    } catch (memoryError) {
+      console.log('메모리 저장소 차량 조회 실패:', memoryError);
+    }
+
+    // 중복 제거 (ID 기준)
+    const uniqueCars = allCars.filter((car, index, self) =>
+      index === self.findIndex(c => c.id === car.id)
+    );
+
+    return NextResponse.json({
+      success: true,
+      data: uniqueCars,
+      count: uniqueCars.length,
+      sources: sources,
+      message: sources.length === 0 ? '등록된 차량이 없습니다.' : 
+               sources.includes('memory') && !sources.includes('supabase') ? 
+               'Supabase cars 테이블을 생성해야 데이터가 영구 저장됩니다.' : 
+               '정상적으로 조회되었습니다.'
+    });
 
   } catch (error) {
     console.error('차량 조회 오류:', error);
