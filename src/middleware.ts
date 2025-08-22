@@ -64,8 +64,8 @@ export default withAuth(
       authorized: ({ token, req }) => {
         const pathname = req.nextUrl.pathname
         
-        // 공개 경로들
-        const publicPaths = ['/', '/auth', '/shops', '/api/auth', '/api/shops']
+        // 공개 경로들 (인증 불필요)
+        const publicPaths = ['/', '/auth', '/shops', '/api/auth']
         if (publicPaths.some(path => pathname.startsWith(path))) {
           return true
         }
@@ -92,13 +92,10 @@ export default withAuth(
 export const config = {
   matcher: [
     /*
-     * 다음 경로들을 제외한 모든 요청에 미들웨어 적용:
-     * - api (API routes)
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public 폴더의 파일들
+     * 미들웨어를 적용할 경로들:
+     * - 모든 페이지 경로 (단, API routes와 정적 파일 제외)
+     * - /api/auth/* (인증 관련 API만)
      */
-    '/((?!api|_next/static|_next/image|favicon.ico|.*\\..*$).*)',
+    '/((?!api(?!/auth)|_next/static|_next/image|favicon.ico).*)',
   ],
 }
