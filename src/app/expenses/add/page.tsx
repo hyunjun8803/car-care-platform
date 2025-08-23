@@ -264,7 +264,7 @@ export default function AddExpensePage() {
                       <SelectValue placeholder="차량을 선택하세요" />
                     </SelectTrigger>
                     <SelectContent>
-                      {cars.map((car) => (
+                      {cars.filter(car => car && car.brand && car.model).map((car) => (
                         <SelectItem key={car.id} value={car.id}>
                           {car.brand} {car.model} ({car.licensePlate})
                         </SelectItem>

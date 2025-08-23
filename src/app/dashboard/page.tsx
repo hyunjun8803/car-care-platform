@@ -250,7 +250,7 @@ export default function DashboardPage() {
             shopName: booking.shop?.businessName || "정비소 정보 없음",
             services: [booking.service?.name || "서비스 정보 없음"],
             status: booking.status.toLowerCase(),
-            carName: booking.car?.name || `${booking.car?.brand} ${booking.car?.model}`,
+            carName: booking.car?.name || (booking.car?.brand && booking.car?.model ? `${booking.car.brand} ${booking.car.model}` : "차량 정보 없음"),
             estimatedCost: booking.estimatedCost
           })) : [],
         
@@ -416,7 +416,7 @@ export default function DashboardPage() {
                           <SelectValue placeholder="차량을 선택하세요" />
                         </SelectTrigger>
                         <SelectContent>
-                          {dashboardData.cars.map((car) => (
+                          {dashboardData.cars.filter(car => car && car.brand && car.model).map((car) => (
                             <SelectItem key={car.id} value={car.id}>
                               <div className="flex items-center space-x-3">
                                 <span className="text-lg">{getBrandLogo(car.brand)}</span>

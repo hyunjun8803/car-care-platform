@@ -272,7 +272,7 @@ export default function ExpensesPage() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">모든 차량</SelectItem>
-                      {cars.map((car) => (
+                      {cars.filter(car => car && car.brand && car.model).map((car) => (
                         <SelectItem key={car.id} value={car.id}>
                           {car.brand} {car.model} ({car.licensePlate})
                         </SelectItem>
@@ -373,7 +373,7 @@ export default function ExpensesPage() {
                                 {expense.subcategory && (
                                   <span>• {expense.subcategory}</span>
                                 )}
-                                <span>• {expense.car.brand} {expense.car.model}</span>
+                                <span>• {expense.car?.brand} {expense.car?.model}</span>
                                 <span>• {formatDate(expense.date)}</span>
                               </div>
                             </div>
