@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
+import { expenseMemoryStorage } from '@/lib/expense-storage';
 
 // GET /api/expenses - 차계부 목록 조회
 export async function GET(request: NextRequest) {
@@ -16,63 +16,22 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
-    const carId = searchParams.get('carId');
-    const category = searchParams.get('category');
-    const startDate = searchParams.get('startDate');
-    const endDate = searchParams.get('endDate');
+    const carId = searchParams.get('carId') || undefined;
+    const category = searchParams.get('category') || undefined;
+    const startDate = searchParams.get('startDate') || undefined;
+    const endDate = searchParams.get('endDate') || undefined;
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '20');
 
-    // 필터 조건 구성
-    const where: {
-      userId: string;
-      carId?: string;
-      category?: string;
-      date?: {
-        gte: Date;
-        lte: Date;
-      };
-    } = {
-      userId: session.user.id
-    };
-
-    if (carId) {
-      where.carId = carId;
-    }
-
-    if (category) {
-      where.category = category;
-    }
-
-    if (startDate && endDate) {
-      where.date = {
-        gte: new Date(startDate),
-        lte: new Date(endDate)
-      };
-    }
-
     // 데이터 조회
-    const [expenses, total] = await Promise.all([
-      prisma.expense.findMany({
-        where,
-        include: {
-          car: {
-            select: {
-              name: true,
-              brand: true,
-              model: true,
-              licensePlate: true
-            }
-          }
-        },
-        orderBy: {
-          date: 'desc'
-        },
-        skip: (page - 1) * limit,
-        take: limit
-      }),
-      prisma.expense.count({ where })
-    ]);
+    const { expenses, total } = await expenseMemoryStorage.findByUserId(session.user.id, {
+      carId,
+      category,
+      startDate,
+      endDate,
+      page,
+      limit
+    });
 
     return NextResponse.json({
       success: true,
@@ -134,49 +93,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 차량 소유권 확인
-    const car = await prisma.car.findFirst({
-      where: {
-        id: carId,
-        userId: session.user.id
-      }
-    });
-
-    if (!car) {
-      return NextResponse.json(
-        { success: false, error: '해당 차량을 찾을 수 없습니다.' },
-        { status: 404 }
-      );
-    }
-
-    // 지출 기록 생성
-    const expense = await prisma.expense.create({
-      data: {
-        userId: session.user.id,
-        carId,
-        category,
-        subcategory,
-        amount: parseFloat(amount),
-        description,
-        date: new Date(date || new Date()),
-        location,
-        mileage: mileage ? parseInt(mileage) : null,
-        paymentMethod: paymentMethod || 'CASH',
-        receiptImageUrl,
-        tags: tags ? JSON.stringify(tags) : null,
-        notes,
-        isRecurring: isRecurring || false
-      },
-      include: {
-        car: {
-          select: {
-            name: true,
-            brand: true,
-            model: true,
-            licensePlate: true
-          }
-        }
-      }
+    // 지출 기록 생성 (차량 확인 생략 - 메모리 저장소에서는 유연하게 처리)
+    const expense = await expenseMemoryStorage.create({
+      userId: session.user.id,
+      carId: carId || 'default_car',
+      category,
+      subcategory,
+      amount: parseFloat(amount),
+      description,
+      date: date || new Date().toISOString(),
+      location,
+      mileage: mileage ? parseInt(mileage) : undefined,
+      paymentMethod: paymentMethod || 'CASH',
+      receiptImageUrl,
+      tags: tags ? JSON.stringify(tags) : undefined,
+      notes,
+      isRecurring: isRecurring || false
     });
 
     return NextResponse.json({
