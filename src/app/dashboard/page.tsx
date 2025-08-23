@@ -648,7 +648,7 @@ export default function DashboardPage() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <Link href="/shops">
+                    <Link href="/booking">
                       <Button className="w-full bg-white/20 hover:bg-white/30 border-white/30 text-white">
                         <Calendar className="h-4 w-4 mr-2" />
                         정비 예약하기
@@ -689,8 +689,8 @@ export default function DashboardPage() {
                       <div className="text-center py-8 text-gray-500">
                         <Calendar className="h-12 w-12 mx-auto mb-3 text-gray-300" />
                         <p>예정된 예약이 없습니다</p>
-                        <Link href="/shops">
-                          <Button className="mt-3 bg-blue-600 hover:bg-blue-700">정비소 찾기</Button>
+                        <Link href="/booking">
+                          <Button className="mt-3 bg-blue-600 hover:bg-blue-700">정비 예약하기</Button>
                         </Link>
                       </div>
                     ) : (
