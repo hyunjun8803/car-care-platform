@@ -8,6 +8,11 @@ import { supabaseUserStorage } from "@/lib/supabase-storage"
 import { userStorage } from "@/lib/storage"
 
 export const authOptions: NextAuthOptions = {
+  // 동적으로 URL 설정 (Vercel 배포시 자동 감지)
+  url: process.env.NEXTAUTH_URL || 
+       process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 
+       'http://localhost:3000',
+  
   providers: [
     // Google OAuth Provider
     GoogleProvider({
