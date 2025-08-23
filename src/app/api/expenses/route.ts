@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { expenseMemoryStorage } from '@/lib/expense-storage';
+import { supabaseExpenseStorage } from '@/lib/supabase-expense-storage';
 
 // GET /api/expenses - 차계부 목록 조회
 export async function GET(request: NextRequest) {
@@ -23,28 +24,68 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '20');
 
-    // 데이터 조회
-    const { expenses, total } = await expenseMemoryStorage.findByUserId(session.user.id, {
-      carId,
-      category,
-      startDate,
-      endDate,
-      page,
-      limit
-    });
+    // 다중 저장소에서 차계부 조회 (Supabase + 메모리)
+    let allExpenses: any[] = [];
+    let totalCount = 0;
+    let sources: string[] = [];
+    
+    // Supabase에서 차계부 조회 시도
+    try {
+      const supabaseResult = await supabaseExpenseStorage.findByUserId(session.user.id, {
+        carId,
+        category,
+        startDate,
+        endDate,
+        page,
+        limit
+      });
+      if (supabaseResult.expenses.length > 0) {
+        allExpenses = supabaseResult.expenses;
+        totalCount = supabaseResult.total;
+        sources.push('supabase');
+      }
+    } catch (supabaseError) {
+      console.log('Supabase 차계부 조회 실패:', supabaseError);
+    }
+    
+    // Supabase에 데이터가 없으면 메모리 저장소에서 조회
+    if (allExpenses.length === 0) {
+      try {
+        const memoryResult = await expenseMemoryStorage.findByUserId(session.user.id, {
+          carId,
+          category,
+          startDate,
+          endDate,
+          page,
+          limit
+        });
+        if (memoryResult.expenses.length > 0) {
+          allExpenses = memoryResult.expenses;
+          totalCount = memoryResult.total;
+          sources.push('memory');
+        }
+      } catch (memoryError) {
+        console.log('메모리 저장소 차계부 조회 실패:', memoryError);
+      }
+    }
 
     return NextResponse.json({
       success: true,
       data: {
-        expenses,
+        expenses: allExpenses,
         pagination: {
           currentPage: page,
-          totalPages: Math.ceil(total / limit),
-          totalCount: total,
-          hasNext: page < Math.ceil(total / limit),
+          totalPages: Math.ceil(totalCount / limit),
+          totalCount: totalCount,
+          hasNext: page < Math.ceil(totalCount / limit),
           hasPrev: page > 1
         }
-      }
+      },
+      sources: sources,
+      message: sources.length === 0 ? '등록된 차계부가 없습니다.' : 
+               sources.includes('memory') && !sources.includes('supabase') ? 
+               'Supabase expenses 테이블을 생성해야 데이터가 영구 저장됩니다.' : 
+               '정상적으로 조회되었습니다.'
     });
 
   } catch (error) {
@@ -93,8 +134,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 지출 기록 생성 (차량 확인 생략 - 메모리 저장소에서는 유연하게 처리)
-    const expense = await expenseMemoryStorage.create({
+    // 다중 저장소에 차계부 생성 (Supabase 우선, 실패 시 메모리)
+    const expenseData = {
       userId: session.user.id,
       carId: carId || 'default_car',
       category,
@@ -109,11 +150,36 @@ export async function POST(request: NextRequest) {
       tags: tags ? JSON.stringify(tags) : undefined,
       notes,
       isRecurring: isRecurring || false
-    });
+    };
+
+    let expense;
+    let source: string;
+
+    try {
+      // Supabase 우선 시도
+      expense = await supabaseExpenseStorage.create(expenseData);
+      source = 'supabase';
+      
+      // 메모리 저장소에도 백업 저장
+      try {
+        await expenseMemoryStorage.create(expenseData);
+      } catch (memoryError) {
+        console.log('메모리 저장소 백업 실패:', memoryError);
+      }
+    } catch (supabaseError) {
+      console.log('Supabase 차계부 생성 실패, 메모리 저장소 사용:', supabaseError);
+      
+      // 메모리 저장소 폴백
+      expense = await expenseMemoryStorage.create(expenseData);
+      source = 'memory';
+    }
 
     return NextResponse.json({
       success: true,
-      data: expense
+      data: expense,
+      source: source,
+      message: source === 'supabase' ? '차계부가 성공적으로 저장되었습니다.' : 
+               'Supabase 연결 실패로 임시 저장소에 저장되었습니다. expenses 테이블을 생성하세요.'
     });
 
   } catch (error) {
