@@ -258,7 +258,7 @@ export default function BookingPage() {
           <>
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-semibold text-gray-900">
-                {userLocation ? '가까운 정비소' : '승인된 정비소'} ({shops.length}개)
+                가까운 정비소 ({shops.length}개)
               </h2>
               {userLocation && (
                 <Badge variant="outline" className="text-blue-600 border-blue-200">
@@ -276,7 +276,7 @@ export default function BookingPage() {
                     {searchQuery ? '검색 결과가 없습니다' : '등록된 정비소가 없습니다'}
                   </h3>
                   <p className="text-gray-500">
-                    {searchQuery ? '다른 검색어로 시도해보세요.' : '승인된 정비소가 등록되면 표시됩니다.'}
+                    {searchQuery ? '다른 검색어로 시도해보세요.' : '정비소가 등록되면 표시됩니다.'}
                   </p>
                 </CardContent>
               </Card>
