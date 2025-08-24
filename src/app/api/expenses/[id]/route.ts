@@ -152,6 +152,32 @@ export async function PUT(
       }
     });
 
+    // 주행거리가 수정되었으면 차량의 주행거리 업데이트
+    if (mileage !== undefined && typeof mileage === 'number' && mileage > 0) {
+      try {
+        const carToUpdate = carId || existingExpense.carId;
+        const currentCar = await prisma.car.findUnique({
+          where: { id: carToUpdate }
+        });
+
+        if (currentCar) {
+          const currentMileage = currentCar.mileage || 0;
+          
+          // 새 주행거리가 현재 주행거리보다 높을 때만 업데이트
+          if (mileage > currentMileage) {
+            await prisma.car.update({
+              where: { id: carToUpdate },
+              data: { mileage }
+            });
+            console.log(`차량 ${carToUpdate}의 주행거리를 ${currentMileage}에서 ${mileage}로 업데이트했습니다.`);
+          }
+        }
+      } catch (carUpdateError) {
+        console.error('차량 주행거리 업데이트 실패:', carUpdateError);
+        // 에러가 발생해도 차계부 수정은 성공했으므로 계속 진행
+      }
+    }
+
     return NextResponse.json({
       success: true,
       data: updatedExpense

@@ -3,6 +3,8 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { expenseMemoryStorage } from '@/lib/expense-storage';
 import { supabaseExpenseStorage } from '@/lib/supabase-expense-storage';
+import { supabaseCarStorage } from '@/lib/supabase-car-storage';
+import { carMemoryStorage } from '@/lib/car-storage';
 
 // GET /api/expenses - 차계부 목록 조회
 export async function GET(request: NextRequest) {
@@ -172,6 +174,39 @@ export async function POST(request: NextRequest) {
       // 메모리 저장소 폴백
       expense = await expenseMemoryStorage.create(expenseData);
       source = 'memory';
+    }
+
+    // 주행거리가 있으면 차량의 주행거리 업데이트
+    if (mileage && typeof mileage === 'number' && mileage > 0) {
+      try {
+        // 현재 차량 정보 조회
+        let currentCar;
+        try {
+          currentCar = await supabaseCarStorage.findById(carId);
+        } catch (supabaseCarError) {
+          console.log('Supabase 차량 조회 실패, 메모리 저장소 사용:', supabaseCarError);
+          currentCar = await carMemoryStorage.findById(carId);
+        }
+
+        if (currentCar) {
+          const currentMileage = currentCar.mileage || 0;
+          
+          // 새 주행거리가 현재 주행거리보다 높을 때만 업데이트
+          if (mileage > currentMileage) {
+            try {
+              await supabaseCarStorage.update(carId, { mileage });
+              console.log(`차량 ${carId}의 주행거리를 ${currentMileage}에서 ${mileage}로 업데이트했습니다.`);
+            } catch (supabaseCarUpdateError) {
+              console.log('Supabase 차량 주행거리 업데이트 실패, 메모리 저장소 사용:', supabaseCarUpdateError);
+              await carMemoryStorage.update(carId, { mileage });
+              console.log(`차량 ${carId}의 주행거리를 ${currentMileage}에서 ${mileage}로 업데이트했습니다. (메모리 저장소)`);
+            }
+          }
+        }
+      } catch (carUpdateError) {
+        console.error('차량 주행거리 업데이트 실패:', carUpdateError);
+        // 에러가 발생해도 차계부 생성은 성공했으므로 계속 진행
+      }
     }
 
     return NextResponse.json({
