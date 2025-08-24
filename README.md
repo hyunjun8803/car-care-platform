@@ -4,25 +4,20 @@
 
 ## ✨ 주요 기능
 
-- **🔍 차량번호 검색**: CODEF API 연동으로 자동 제원 정보 조회
-- **📊 스마트 대시보드**: 차량별 정비 현황 및 예측 분석
 - **🚙 차량 관리**: 다중 차량 등록 및 상세 정보 관리
-- **📅 정비소 예약**: 온라인 예약 시스템
-- **📸 OCR 영수증 인식**: 자동 지출 입력 시스템
-- **💰 지출 관리**: 차량 관련 비용 추적 및 분석
-- **⭐ 리뷰 시스템**: 정비소 평가 및 후기
-- **🔔 알림 서비스**: 이메일/SMS 정비 일정 및 비용 알림
-- **🔐 비밀번호 재설정**: 6자리 코드 기반 안전한 비밀번호 재설정
+- **📅 정비소 예약**: 위치 기반 정비소 검색 및 온라인 예약  
+- **💰 차계부**: 차량 관련 지출 관리 및 통계 제공
+- **📊 스마트 대시보드**: 차량별 정비 현황 및 지출 분석
+- **🔐 사용자 인증**: NextAuth.js 기반 안전한 로그인
 
 ## 🛠 기술 스택
 
-- **Frontend**: Next.js 15, TypeScript, Tailwind CSS
-- **UI Components**: shadcn/ui, Lucide Icons
-- **Authentication**: NextAuth.js (Google, Kakao, Naver OAuth)
-- **Database**: Prisma ORM with SQLite/PostgreSQL
-- **Notifications**: Nodemailer (Email), Twilio (SMS)
-- **OCR**: 영수증 자동 인식 시뮬레이터
-- **External API**: CODEF 자동차 제원 정보 API
+- **Frontend**: Next.js 15.4.6, React, TypeScript
+- **Styling**: Tailwind CSS, shadcn/ui
+- **Backend**: Next.js API Routes
+- **Database**: Supabase (PostgreSQL)
+- **Authentication**: NextAuth.js
+- **Deployment**: Vercel
 
 ## 🚀 빠른 시작
 
@@ -38,46 +33,27 @@ npm install
 ```
 
 ### 3. 환경 변수 설정
-```bash
-cp .env.example .env.local
-```
 
-`.env.local` 파일을 열어 다음 값들을 설정하세요:
+`.env.local` 파일을 생성하고 다음 값들을 설정하세요:
 
 ```env
-# Database
-DATABASE_URL="file:./dev.db"
-
 # NextAuth
 NEXTAUTH_URL="http://localhost:3000"
-NEXTAUTH_SECRET="your-nextauth-secret-key"
+NEXTAUTH_SECRET="your-nextauth-secret-key-here"
 
-# OAuth Providers
-GOOGLE_CLIENT_ID="your-google-client-id"
-GOOGLE_CLIENT_SECRET="your-google-client-secret"
-KAKAO_CLIENT_ID="your-kakao-client-id"
-KAKAO_CLIENT_SECRET="your-kakao-client-secret"
-NAVER_CLIENT_ID="your-naver-client-id"
-NAVER_CLIENT_SECRET="your-naver-client-secret"
-
-# Email Settings (Gmail example)
-SMTP_HOST="smtp.gmail.com"
-SMTP_PORT="587"
-SMTP_USER="your-email@gmail.com"
-SMTP_PASS="your-gmail-app-password"
-EMAIL_FROM="Car Care Platform <your-email@gmail.com>"
-
-# CODEF API (자동차 제원 정보)
-CODEF_CLIENT_ID="your-codef-client-id"
-CODEF_CLIENT_SECRET="your-codef-client-secret"
-CODEF_PUBLIC_KEY="your-codef-public-key"
+# Supabase
+NEXT_PUBLIC_SUPABASE_URL=your-supabase-project-url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
 ```
 
 ### 4. 데이터베이스 설정
-```bash
-npx prisma db push
-npx prisma generate
-```
+
+Supabase 프로젝트에서 다음 SQL 파일들을 실행하세요:
+
+1. **차량 테이블 생성**: `create-cars-table.sql`
+2. **차계부 테이블 생성**: `create-expenses-table.sql`
+
+Supabase 대시보드 → SQL Editor에서 해당 파일의 내용을 복사하여 실행하세요.
 
 ### 5. 개발 서버 실행
 ```bash
@@ -89,41 +65,37 @@ npm run dev
 ## 📱 주요 페이지
 
 - **홈페이지**: `/` - 메인 랜딩 페이지
-- **로그인**: `/auth/signin` - 다중 OAuth 로그인
-- **회원가입**: `/auth/signup` - 고객 전용 회원가입
-- **대시보드**: `/dashboard` - 차량 관리 대시보드
-- **차량 등록**: `/cars/register` - 차량번호 검색 기능 포함
-- **지출 추가**: `/expenses/add` - OCR 영수증 인식
-- **정비소 찾기**: `/shops` - 예약 가능한 정비소
+- **로그인**: `/auth/signin` - NextAuth 기반 로그인
+- **대시보드**: `/dashboard` - 차량 관리 및 지출 현황 대시보드
+- **차량 관리**: `/cars` - 차량 등록 및 관리
+- **정비 예약**: `/booking` - 위치 기반 정비소 검색 및 예약
+- **차계부**: `/expenses` - 차량 지출 관리 및 통계
+- **지출 추가**: `/expenses/add` - 새 지출 기록 추가
 
 ## 🔧 API 엔드포인트
 
-### 인증
-- `POST /api/auth/register` - 회원가입
-- `POST /api/auth/forgot-password` - 비밀번호 재설정 요청
-- `POST /api/auth/reset-password` - 비밀번호 재설정
-
 ### 차량 관리
-- `GET /api/cars` - 차량 목록 조회
-- `POST /api/cars` - 차량 등록
-- `POST /api/vehicles/search` - 차량번호 검색 (CODEF API)
+- `GET /api/cars` - 사용자 차량 목록 조회
+- `POST /api/cars` - 새 차량 등록
+- `PUT /api/cars/[id]` - 차량 정보 수정
+- `DELETE /api/cars/[id]` - 차량 삭제
 
 ### 대시보드
-- `GET /api/dashboard/stats` - 대시보드 통계
+- `GET /api/dashboard` - 대시보드 데이터 조회
 
-### 예약 관리
-- `GET /api/bookings` - 예약 목록
+### 정비소 및 예약
+- `GET /api/shops` - 정비소 목록 조회 (위치 기반)
 - `POST /api/bookings` - 새 예약 생성
+- `GET /api/bookings` - 예약 목록 조회
 
-### OCR 및 지출
-- `POST /api/ocr/receipt` - 영수증 OCR 처리
-- `GET /api/expenses` - 지출 목록
-- `POST /api/expenses` - 지출 추가
+### 차계부
+- `GET /api/expenses` - 지출 목록 조회 (필터링 지원)
+- `POST /api/expenses` - 새 지출 기록 추가  
+- `GET /api/expenses/stats` - 지출 통계 조회
 
-### 알림
-- `POST /api/notifications/reminder` - 예약 리마인더 전송
-- `GET /api/user/notification-settings` - 알림 설정 조회
-- `PUT /api/user/notification-settings` - 알림 설정 변경
+### 관리자 도구
+- `POST /api/admin/create-cars-table` - 차량 테이블 생성
+- `POST /api/admin/create-expenses-table` - 차계부 테이블 생성
 
 ## 🚀 배포
 
