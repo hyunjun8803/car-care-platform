@@ -3,6 +3,8 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { supabaseCarStorage } from '@/lib/supabase-car-storage';
 import { carMemoryStorage } from '@/lib/car-storage';
+import { supabaseExpenseStorage } from '@/lib/supabase-expense-storage';
+import { expenseMemoryStorage } from '@/lib/expense-storage';
 // import { prisma } from '@/lib/prisma';
 
 // GET /api/dashboard/stats - 대시보드 통계 데이터 조회
@@ -28,8 +30,66 @@ export async function GET() {
       totalCars = await carMemoryStorage.countByUserId(userId);
     }
 
-    // 임시 더미 데이터 (실제 데이터베이스 연결 전까지)
-    const thisMonthMaintenanceCost = 0;
+    // 실제 차계부 데이터 조회 (이번 달 지출)
+    let expenseStats;
+    let expenseSource: string;
+    let thisMonthMaintenanceCost = 0;
+    let thisMonthExpenseTotal = 0;
+    let expensesByCategory: any = {};
+    let recentExpenses: any[] = [];
+
+    try {
+      // Supabase에서 이번 달 지출 통계 조회
+      expenseStats = await supabaseExpenseStorage.getStats(userId, { period: 'month' });
+      expenseSource = 'supabase';
+      
+      thisMonthExpenseTotal = expenseStats.summary.totalAmount || 0;
+      thisMonthMaintenanceCost = expenseStats.categoryStats
+        ?.find((cat: any) => cat.category === 'MAINTENANCE')?.amount || 0;
+      
+      // 카테고리별 지출 구성
+      expensesByCategory = {
+        fuel: expenseStats.categoryStats?.find((cat: any) => cat.category === 'FUEL')?.amount || 0,
+        maintenance: expenseStats.categoryStats?.find((cat: any) => cat.category === 'MAINTENANCE')?.amount || 0,
+        supplies: expenseStats.categoryStats?.find((cat: any) => cat.category === 'SUPPLIES')?.amount || 0,
+        carWash: expenseStats.categoryStats?.find((cat: any) => cat.category === 'CAR_WASH')?.amount || 0,
+        insurance: expenseStats.categoryStats?.find((cat: any) => cat.category === 'INSURANCE')?.amount || 0,
+        other: expenseStats.categoryStats?.find((cat: any) => !['FUEL', 'MAINTENANCE', 'SUPPLIES', 'CAR_WASH', 'INSURANCE'].includes(cat.category))?.amount || 0
+      };
+      
+      // 최근 지출 기록
+      recentExpenses = expenseStats.recentExpenses || [];
+      
+    } catch (supabaseError) {
+      console.log('Supabase 차계부 통계 조회 실패, 메모리 저장소 사용:', supabaseError);
+      
+      try {
+        // 메모리 저장소 폴백
+        expenseStats = await expenseMemoryStorage.getStats(userId, { period: 'month' });
+        expenseSource = 'memory';
+        
+        thisMonthExpenseTotal = expenseStats.summary.totalAmount || 0;
+        thisMonthMaintenanceCost = expenseStats.categoryStats
+          ?.find((cat: any) => cat.category === 'MAINTENANCE')?.amount || 0;
+        
+        expensesByCategory = {
+          fuel: expenseStats.categoryStats?.find((cat: any) => cat.category === 'FUEL')?.amount || 0,
+          maintenance: expenseStats.categoryStats?.find((cat: any) => cat.category === 'MAINTENANCE')?.amount || 0,
+          supplies: expenseStats.categoryStats?.find((cat: any) => cat.category === 'SUPPLIES')?.amount || 0,
+          carWash: expenseStats.categoryStats?.find((cat: any) => cat.category === 'CAR_WASH')?.amount || 0,
+          insurance: expenseStats.categoryStats?.find((cat: any) => cat.category === 'INSURANCE')?.amount || 0,
+          other: 0
+        };
+        
+        recentExpenses = expenseStats.recentExpenses || [];
+        
+      } catch (memoryError) {
+        console.log('메모리 저장소 차계부 통계 조회 실패:', memoryError);
+        expenseSource = 'none';
+      }
+    }
+
+    // 기타 데이터 (임시 더미 데이터)
     const thisMonthMaintenanceCount = 0;
     const upcomingBookings = 0;
     const maintenanceAlerts = 0;
@@ -63,15 +123,30 @@ export async function GET() {
       overview: {
         totalCars,
         thisMonthMaintenanceCost,
+        thisMonthExpenseTotal,
         thisMonthMaintenanceCount,
         upcomingBookings,
         maintenanceAlerts
+      },
+      expenseSnapshot: {
+        thisMonthTotal: thisMonthExpenseTotal,
+        categories: expensesByCategory,
+        recentExpenses: recentExpenses.map((expense: any) => ({
+          id: expense.id,
+          date: new Date(expense.date).toLocaleDateString('ko-KR'),
+          category: expense.category,
+          amount: expense.amount,
+          description: expense.description
+        }))
       },
       recentActivity: {
         maintenanceRecords: recentMaintenanceRecords,
         bookings: recentBookings
       },
-      monthlyStats
+      monthlyStats,
+      sources: {
+        expenses: expenseSource || 'none'
+      }
     };
 
     return NextResponse.json({

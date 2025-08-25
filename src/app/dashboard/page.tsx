@@ -165,7 +165,7 @@ export default function DashboardPage() {
       const transformedData: NewDashboardData = {
         overview: {
           totalCars: statsData.data.overview.totalCars || 0,
-          thisMonthMaintenanceCost: statsData.data.overview.thisMonthMaintenanceCost || 0,
+          thisMonthMaintenanceCost: statsData.data.overview.thisMonthExpenseTotal || statsData.data.overview.thisMonthMaintenanceCost || 0,
           upcomingBookings: statsData.data.overview.upcomingBookings || 0,
           maintenanceAlerts: statsData.data.overview.maintenanceAlerts || 0,
         },
@@ -268,25 +268,17 @@ export default function DashboardPage() {
           }
         ] : [],
         
-        // 지출 스냅샷 (실제 데이터 기반)
+        // 지출 스냅샷 (실제 차계부 데이터)
         expenseSnapshot: {
-          thisMonthTotal: statsData.data.overview.thisMonthMaintenanceCost || 0,
+          thisMonthTotal: statsData.data.expenseSnapshot?.thisMonthTotal || statsData.data.overview.thisMonthExpenseTotal || 0,
           categories: {
-            fuel: 0, // 별도 API에서 가져와야 함
-            maintenance: statsData.data.overview.thisMonthMaintenanceCost || 0,
-            supplies: 0,
-            carWash: 0,
-            insurance: 0
+            fuel: statsData.data.expenseSnapshot?.categories?.fuel || 0,
+            maintenance: statsData.data.expenseSnapshot?.categories?.maintenance || statsData.data.overview.thisMonthMaintenanceCost || 0,
+            supplies: statsData.data.expenseSnapshot?.categories?.supplies || 0,
+            carWash: statsData.data.expenseSnapshot?.categories?.carWash || 0,
+            insurance: statsData.data.expenseSnapshot?.categories?.insurance || 0
           },
-          recentExpenses: statsData.data.recentActivity?.maintenanceRecords
-            ?.slice(0, 3)
-            ?.map((record: any) => ({
-              id: record.id,
-              date: record.date,
-              category: "정비",
-              amount: record.cost,
-              description: record.description
-            })) || []
+          recentExpenses: statsData.data.expenseSnapshot?.recentExpenses || []
         }
       };
 
@@ -485,7 +477,7 @@ export default function DashboardPage() {
                   <CardContent className="p-6 text-center">
                     <DollarSign className="h-8 w-8 mx-auto mb-3 text-green-500" />
                     <p className="text-2xl font-bold text-green-600">₩{formatCurrency(dashboardData.overview.thisMonthMaintenanceCost)}</p>
-                    <p className="text-sm text-gray-600">이번 달 정비비</p>
+                    <p className="text-sm text-gray-600">이번 달 총 지출</p>
                   </CardContent>
                 </Card>
 
@@ -790,15 +782,22 @@ export default function DashboardPage() {
                     <div>
                       <h4 className="font-semibold text-gray-900 mb-3">최근 지출</h4>
                       <div className="space-y-2">
-                        {dashboardData.expenseSnapshot.recentExpenses.map((expense) => (
-                          <div key={expense.id} className="flex items-center justify-between text-sm">
-                            <div>
-                              <p className="font-medium">{expense.description}</p>
-                              <p className="text-xs text-gray-500">{expense.date} · {expense.category}</p>
-                            </div>
-                            <span className="font-medium">₩{formatCurrency(expense.amount)}</span>
+                        {dashboardData.expenseSnapshot.recentExpenses.length === 0 ? (
+                          <div className="text-center py-4 text-gray-500">
+                            <Receipt className="h-8 w-8 mx-auto mb-2 text-gray-300" />
+                            <p className="text-sm">최근 지출이 없습니다</p>
                           </div>
-                        ))}
+                        ) : (
+                          dashboardData.expenseSnapshot.recentExpenses.map((expense) => (
+                            <div key={expense.id} className="flex items-center justify-between text-sm">
+                              <div>
+                                <p className="font-medium">{expense.description}</p>
+                                <p className="text-xs text-gray-500">{expense.date} · {expense.category}</p>
+                              </div>
+                              <span className="font-medium">₩{formatCurrency(expense.amount)}</span>
+                            </div>
+                          ))
+                        )}
                       </div>
                     </div>
                   </div>
