@@ -158,4 +158,4 @@ curl -X POST http://localhost:3000/api/notifications/reminder
 - [ ] 실시간 채팅 상담
 - [ ] 모바일 앱 개발
 - [ ] AI 기반 정비 예측
-- [ ] 블록체인 정비 이력 관리
+- [ ] 블록체인 정비 이력 관리# Force deployment
