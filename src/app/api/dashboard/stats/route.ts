@@ -47,14 +47,18 @@ export async function GET() {
       thisMonthMaintenanceCost = expenseStats.categoryStats
         ?.find((cat: any) => cat.category === 'MAINTENANCE')?.amount || 0;
       
-      // 카테고리별 지출 구성
+      // 카테고리별 지출 구성 (모든 차계부 카테고리)
       expensesByCategory = {
         fuel: expenseStats.categoryStats?.find((cat: any) => cat.category === 'FUEL')?.amount || 0,
         maintenance: expenseStats.categoryStats?.find((cat: any) => cat.category === 'MAINTENANCE')?.amount || 0,
-        supplies: expenseStats.categoryStats?.find((cat: any) => cat.category === 'SUPPLIES')?.amount || 0,
-        carWash: expenseStats.categoryStats?.find((cat: any) => cat.category === 'CAR_WASH')?.amount || 0,
         insurance: expenseStats.categoryStats?.find((cat: any) => cat.category === 'INSURANCE')?.amount || 0,
-        other: expenseStats.categoryStats?.find((cat: any) => !['FUEL', 'MAINTENANCE', 'SUPPLIES', 'CAR_WASH', 'INSURANCE'].includes(cat.category))?.amount || 0
+        tax: expenseStats.categoryStats?.find((cat: any) => cat.category === 'TAX')?.amount || 0,
+        parking: expenseStats.categoryStats?.find((cat: any) => cat.category === 'PARKING')?.amount || 0,
+        toll: expenseStats.categoryStats?.find((cat: any) => cat.category === 'TOLL')?.amount || 0,
+        carWash: expenseStats.categoryStats?.find((cat: any) => cat.category === 'CARWASH')?.amount || 0,
+        accessories: expenseStats.categoryStats?.find((cat: any) => cat.category === 'ACCESSORIES')?.amount || 0,
+        rental: expenseStats.categoryStats?.find((cat: any) => cat.category === 'RENTAL')?.amount || 0,
+        other: expenseStats.categoryStats?.find((cat: any) => cat.category === 'OTHER')?.amount || 0
       };
       
       // 최근 지출 기록
@@ -75,10 +79,14 @@ export async function GET() {
         expensesByCategory = {
           fuel: expenseStats.categoryStats?.find((cat: any) => cat.category === 'FUEL')?.amount || 0,
           maintenance: expenseStats.categoryStats?.find((cat: any) => cat.category === 'MAINTENANCE')?.amount || 0,
-          supplies: expenseStats.categoryStats?.find((cat: any) => cat.category === 'SUPPLIES')?.amount || 0,
-          carWash: expenseStats.categoryStats?.find((cat: any) => cat.category === 'CAR_WASH')?.amount || 0,
           insurance: expenseStats.categoryStats?.find((cat: any) => cat.category === 'INSURANCE')?.amount || 0,
-          other: 0
+          tax: expenseStats.categoryStats?.find((cat: any) => cat.category === 'TAX')?.amount || 0,
+          parking: expenseStats.categoryStats?.find((cat: any) => cat.category === 'PARKING')?.amount || 0,
+          toll: expenseStats.categoryStats?.find((cat: any) => cat.category === 'TOLL')?.amount || 0,
+          carWash: expenseStats.categoryStats?.find((cat: any) => cat.category === 'CARWASH')?.amount || 0,
+          accessories: expenseStats.categoryStats?.find((cat: any) => cat.category === 'ACCESSORIES')?.amount || 0,
+          rental: expenseStats.categoryStats?.find((cat: any) => cat.category === 'RENTAL')?.amount || 0,
+          other: expenseStats.categoryStats?.find((cat: any) => cat.category === 'OTHER')?.amount || 0
         };
         
         recentExpenses = expenseStats.recentExpenses || [];

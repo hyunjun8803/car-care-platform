@@ -16,7 +16,8 @@ import {
   Car, Calendar, MapPin, Plus, TrendingUp, AlertCircle, Clock, Wrench, History,
   Fuel, Gauge, Bell, CreditCard, Camera, Navigation, DropletIcon as Oil,
   Disc3 as Brake, Zap, Thermometer, Shield, Settings2, Eye, BookOpen,
-  DollarSign, PieChart, Receipt, Scan, Target
+  DollarSign, PieChart, Receipt, Scan, Target, FileText, ParkingCircle,
+  Route, Waves, Package, Key
 } from "lucide-react";
 
 // 새로운 대시보드 데이터 구조
@@ -103,9 +104,14 @@ interface ExpenseSnapshot {
   categories: {
     fuel: number;
     maintenance: number;
-    supplies: number;
-    carWash: number;
     insurance: number;
+    tax: number;
+    parking: number;
+    toll: number;
+    carWash: number;
+    accessories: number;
+    rental: number;
+    other: number;
   };
   recentExpenses: Array<{
     id: string;
@@ -274,9 +280,14 @@ export default function DashboardPage() {
           categories: {
             fuel: statsData.data.expenseSnapshot?.categories?.fuel || 0,
             maintenance: statsData.data.expenseSnapshot?.categories?.maintenance || statsData.data.overview.thisMonthMaintenanceCost || 0,
-            supplies: statsData.data.expenseSnapshot?.categories?.supplies || 0,
+            insurance: statsData.data.expenseSnapshot?.categories?.insurance || 0,
+            tax: statsData.data.expenseSnapshot?.categories?.tax || 0,
+            parking: statsData.data.expenseSnapshot?.categories?.parking || 0,
+            toll: statsData.data.expenseSnapshot?.categories?.toll || 0,
             carWash: statsData.data.expenseSnapshot?.categories?.carWash || 0,
-            insurance: statsData.data.expenseSnapshot?.categories?.insurance || 0
+            accessories: statsData.data.expenseSnapshot?.categories?.accessories || 0,
+            rental: statsData.data.expenseSnapshot?.categories?.rental || 0,
+            other: statsData.data.expenseSnapshot?.categories?.other || 0
           },
           recentExpenses: statsData.data.expenseSnapshot?.recentExpenses || []
         }
@@ -764,16 +775,65 @@ export default function DashboardPage() {
                         <div className="flex items-center justify-between text-sm">
                           <div className="flex items-center space-x-2">
                             <Wrench className="h-4 w-4 text-red-500" />
-                            <span>정비</span>
+                            <span>정비/수리</span>
                           </div>
                           <span className="font-medium">₩{formatCurrency(dashboardData.expenseSnapshot.categories.maintenance)}</span>
                         </div>
                         <div className="flex items-center justify-between text-sm">
                           <div className="flex items-center space-x-2">
-                            <Settings2 className="h-4 w-4 text-green-500" />
-                            <span>소모품</span>
+                            <Shield className="h-4 w-4 text-purple-500" />
+                            <span>보험</span>
                           </div>
-                          <span className="font-medium">₩{formatCurrency(dashboardData.expenseSnapshot.categories.supplies)}</span>
+                          <span className="font-medium">₩{formatCurrency(dashboardData.expenseSnapshot.categories.insurance)}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-sm">
+                          <div className="flex items-center space-x-2">
+                            <FileText className="h-4 w-4 text-orange-500" />
+                            <span>세금/등록비</span>
+                          </div>
+                          <span className="font-medium">₩{formatCurrency(dashboardData.expenseSnapshot.categories.tax)}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-sm">
+                          <div className="flex items-center space-x-2">
+                            <ParkingCircle className="h-4 w-4 text-indigo-500" />
+                            <span>주차비</span>
+                          </div>
+                          <span className="font-medium">₩{formatCurrency(dashboardData.expenseSnapshot.categories.parking)}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-sm">
+                          <div className="flex items-center space-x-2">
+                            <Route className="h-4 w-4 text-teal-500" />
+                            <span>통행료</span>
+                          </div>
+                          <span className="font-medium">₩{formatCurrency(dashboardData.expenseSnapshot.categories.toll)}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-sm">
+                          <div className="flex items-center space-x-2">
+                            <Waves className="h-4 w-4 text-cyan-500" />
+                            <span>세차</span>
+                          </div>
+                          <span className="font-medium">₩{formatCurrency(dashboardData.expenseSnapshot.categories.carWash)}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-sm">
+                          <div className="flex items-center space-x-2">
+                            <Package className="h-4 w-4 text-pink-500" />
+                            <span>용품/액세서리</span>
+                          </div>
+                          <span className="font-medium">₩{formatCurrency(dashboardData.expenseSnapshot.categories.accessories)}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-sm">
+                          <div className="flex items-center space-x-2">
+                            <Key className="h-4 w-4 text-amber-500" />
+                            <span>렌트/리스</span>
+                          </div>
+                          <span className="font-medium">₩{formatCurrency(dashboardData.expenseSnapshot.categories.rental)}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-sm">
+                          <div className="flex items-center space-x-2">
+                            <Settings2 className="h-4 w-4 text-gray-500" />
+                            <span>기타</span>
+                          </div>
+                          <span className="font-medium">₩{formatCurrency(dashboardData.expenseSnapshot.categories.other)}</span>
                         </div>
                       </div>
                     </div>
